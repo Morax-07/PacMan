@@ -9,7 +9,7 @@
 
 
 
-MainPage::MainPage() {
+MainPage::MainPage(): Page() {
     pacman.setPellets(map.getPellets());
     pacman.setBlocks(map.getBlocks());
 }

@@ -13,7 +13,7 @@
 
 // CONSTRUCTOR
 // assignes values to attributes
-MenuPage::MenuPage() {
+MenuPage::MenuPage(): Page() {
     this->showingLogo = true;
     this->showingMenu = false;
     this->pageChanging = false;
