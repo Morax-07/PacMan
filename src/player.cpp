@@ -24,6 +24,8 @@ Player::Player(): width(34), height(32) {
     this->rotation = 0;
     this->points = 0;
     this->stoppedForCollision = false;
+    this->positionBounds[0] = 0;
+    this->outOfBounds = false;
 }
 
 
@@ -68,7 +70,6 @@ void Player::draw() {
         rotation, 
         WHITE
     );
-    DrawFPS(0, 0);
 }
 
 
@@ -113,6 +114,9 @@ void Player::update(float dt) {
 
     //updates the position with movement
     updatePosition(dt);
+
+
+    updateOutOfBounds();
     
 
     //updates the player's animation
@@ -247,12 +251,14 @@ int Player::getPoints() const noexcept {
 //it slides the hitbox rectangle for the player alignement in the interval [-speed * dt * 1.5f, +speed * dt * 1.5f]
 //it corrects the position of the player by an offset to align the player to the corridor
 void Player::checkAndSetNextMovement(std::function<struct Rectangle(void)> hitbox, float dt) {
+    if(outOfBounds) return;
+
     const float tolerance = speed * dt * 1.5f; 
     const float step = 0.05f;      
     bool vertical = (nextMovement == Movement::up || nextMovement == Movement::down);
 
     //lambda function that checks if the slided hitbox is free
-    auto isFree = [&](const Rectangle& r) {
+    static auto isFree = [&](const Rectangle& r) {
         for(const auto& block : *blocks)
             if(CheckCollisionRecs(r, block.hitbox())) return false;
         return true;
@@ -341,6 +347,13 @@ void Player::updatePosition(float dt) {
             rotation = 0;
             break;
     }
+
+
+    //pacman effect
+    if(position.x <= positionBounds[0] - width - 30 && movement == Movement::left) 
+        position.x = positionBounds[1] + 30;
+    else if(position.x >= positionBounds[1] + 30 && movement == Movement::right) 
+        position.x = positionBounds[0] - width - 30;
 }
 
 
@@ -359,4 +372,30 @@ void Player::updateAnimation(float dt) {
             textureRectangle.x += textureRecXDirection;
         }
     }
+}
+
+
+
+//sets the right coordinate for the map boundries
+void Player::setRightPositionBound(float x) {
+    positionBounds[1] = x;
+}
+
+
+
+//checks if the player is out of bounds and sets outOfBound
+void Player::updateOutOfBounds() {
+    if(position.x <= positionBounds[0] || position.x >= positionBounds[1] - (float)width / 2) {
+        outOfBounds = true;
+        return;
+    }
+
+    outOfBounds = false;
+}
+
+
+
+//returns a pointer to the player position
+const Vector2* Player::getPosition() const noexcept {
+    return &this->position;
 }

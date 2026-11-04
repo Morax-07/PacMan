@@ -12,6 +12,7 @@ typedef unsigned long long int ULLInt;
 
 enum class PageType {typeMenuPage, typeMainPage};
 enum class Movement {still, up, down, left, right};
+enum class GhostState {caged, scatter, chase, frightened, eaten};
 
 
 
@@ -20,19 +21,6 @@ enum class Movement {still, up, down, left, right};
 namespace Global {
     extern const Color pacBlue;
     extern bool inputAvailable;
-
-
-    template<typename T> bool elapsedDelayFrom(double delay, T& lastUpdate) {
-        double time = GetTime();
-    
-        if (time - lastUpdate >= delay) {
-            lastUpdate = time;
-            return true;
-        } 
-        else {
-            return false;
-        }
-    }
 }
 
 

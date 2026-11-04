@@ -33,6 +33,8 @@ class Player final {
         std::vector<Block>* blocks;
         int points;
         bool stoppedForCollision;
+        float positionBounds[2];
+        bool outOfBounds;
 
 
         Rectangle mouthHitbox(void) const;
@@ -45,6 +47,8 @@ class Player final {
         void updateMovement(float);
         void updatePosition(float);
         void updateAnimation(float);
+        void updateOutOfBounds(void);
+
 
 
     public:
@@ -57,6 +61,8 @@ class Player final {
         int getPoints(void) const noexcept;
         void checkPelletsCollision(void);
         void checkBodyBlocksCollision(void);
+        void setRightPositionBound(float);
+        const Vector2* getPosition(void) const noexcept;
 
 
         const short int width;

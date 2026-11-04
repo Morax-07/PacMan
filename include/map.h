@@ -17,8 +17,7 @@ class Map final {
         const Vector2 position;
         std::vector<Block> blocks;
         std::vector<Pellet> pellets;
-        const int width;
-        const int height;
+        
         
 
         void loadMapComponents(std::vector<std::vector<short int>>&);
@@ -28,6 +27,10 @@ class Map final {
 
 
     public:
+        const int width;
+        const int height;
+
+
         void draw(void);
         void update(float);
         std::vector<Block>* getBlocks(void);
