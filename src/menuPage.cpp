@@ -58,7 +58,7 @@ MenuPage::~MenuPage() {
 
 
 // draws the logo and the main menu
-void MenuPage::draw() {
+auto MenuPage::draw() -> void {
     if(showingLogo) DrawTextureV(
         raylibLogo, 
         raylibLogoPos, 
@@ -82,7 +82,7 @@ void MenuPage::draw() {
 
 
 //checks inputs in the main page
-void MenuPage::input() {
+auto MenuPage::input() -> void {
     if(!Global::inputAvailable) return;
     
     if(IsKeyPressed(KEY_ENTER) && showingLogo) {
@@ -96,14 +96,14 @@ void MenuPage::input() {
 
 
 // returns the total time for logo fading
-float MenuPage::logoTotalFadeTime() const noexcept {
+auto MenuPage::logoTotalFadeTime() const noexcept -> float {
     return this->logoFadeIn + this->logoHold + this->logoFadeOut + 0.5f;
 }
 
 
 
 // updates the logo showing and the main menu
-void MenuPage::update(float dt) {
+auto MenuPage::update(float dt) -> void {
     if(showingLogo) {
         logoFadeTimer += dt;
 
@@ -146,6 +146,6 @@ void MenuPage::update(float dt) {
 
 
 // signals if the page has to be changed
-bool MenuPage::isPageChanging() const noexcept {
+auto MenuPage::isPageChanging() const noexcept -> bool {
     return this->pageChanging;
 }

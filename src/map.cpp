@@ -49,14 +49,18 @@ Map::Map(): position(Vector2 {0, 0}), width(616), height(682) {
     loadMapTexture();
 }
 
+
+
 //map destructor
 Map::~Map() {
     UnloadRenderTexture(mapTexture);
 }
 
+
+
 //loads all the components of the map
 //istantiates all the Blockand the pellets of the map and puts them into blocks and pellets arrays
-void Map::loadMapComponents(std::vector<std::vector<short int>>& mapNumbers) {
+auto Map::loadMapComponents(std::vector<std::vector<short int>>& mapNumbers) -> void {
     float tileWidth = Block::getWidth();
     float tileHeight = Block::getHeight();
 
@@ -224,8 +228,10 @@ void Map::loadMapComponents(std::vector<std::vector<short int>>& mapNumbers) {
     blocks.shrink_to_fit();
 }
 
+
+
 //loads the full map texture (all the blocks)
-void Map::loadMapTexture() {
+auto Map::loadMapTexture() -> void {
     mapTexture = LoadRenderTexture(width, height);
 
     BeginTextureMode(mapTexture);
@@ -239,21 +245,31 @@ void Map::loadMapTexture() {
     Block::unloadTextures();
 }
 
+
+
 //draws the map
-void Map::draw() {
+auto Map::draw() -> void {
     DrawTextureRec(mapTexture.texture, {0, 0, (float)mapTexture.texture.width, -(float)mapTexture.texture.height}, position, WHITE);
     for(auto& pellet : pellets) pellet.draw();
 }
 
+
+
 //updates the map
-void Map::update(float dt) {
+auto Map::update(float dt) -> void {
     Pellet::update(dt);
 }
 
-std::vector<Pellet>* Map::getPellets() {
+
+
+//returns a pointer to the pellets vector
+auto Map::getPellets() -> std::vector<Pellet>* {
     return &this->pellets;
 }
 
-std::vector<Block>* Map::getBlocks() {
+
+
+//returns a pointer to the blocks vector
+auto Map::getBlocks() const -> const std::vector<Block>* {
     return &this->blocks;
 }

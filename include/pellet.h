@@ -20,12 +20,14 @@ class Pellet final {
 
     
     public:
-        void draw(void);
-        static void update(float);
-        Rectangle hitbox(void) const;
-        int getPoints(void) const noexcept;
+        static auto update(float) -> void;
+        auto draw(void) -> void;
+        auto hitbox(void) const -> Rectangle;
+        auto getPoints(void) const noexcept -> int;
+        auto isBig(void) const noexcept -> bool;
 
 
         Pellet(short int, Vector2);
         Pellet(void);
+        ~Pellet() = default;
 };

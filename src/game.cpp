@@ -16,7 +16,8 @@
 
 
 
-
+//game's constrctor
+//initializes window and page
 Game::Game() {
     //initialize the window
     InitWindow(WIDTH, HEIGHT, "Pac-Man");
@@ -25,17 +26,22 @@ Game::Game() {
 
     this->currentPageType = PageType::typeMenuPage;
     this->page = makePage(currentPageType);
-
-    run();
 }
 
+
+
+//game's destructor
+//unloads page and font and closes window
 Game::~Game() {
     page.reset();
     UnloadFont(Page::font);
     CloseWindow();
 }
 
-void Game::run() {
+
+
+//game loop
+auto Game::run() -> void{
     //game loop
     while(!WindowShouldClose()) {
         input();
@@ -49,11 +55,17 @@ void Game::run() {
     }
 }
 
-void Game::draw() {
+
+
+//draws the page
+auto Game::draw() -> void {
     page->draw();
 }
 
-void Game::update() {
+
+
+//updates the page and creates delta time dt
+auto Game::update() -> void {
     float dt = std::min(GetFrameTime(), 0.05f);
 
     // is game is in the menu and it says that the page is changing, the game make a new page (main)
@@ -65,11 +77,17 @@ void Game::update() {
     page->update(dt);
 }
 
-void Game::input() {
+
+
+//handles page's inputs
+auto Game::input() -> void {
     page->input();
 }
 
-std::unique_ptr<Page> Game::makePage(PageType pt) {
+
+
+//returns a new unique_ptr based on the page type
+auto Game::makePage(PageType pt) -> std::unique_ptr<Page> {
     switch(pt) {
         case PageType::typeMenuPage: return std::make_unique<MenuPage>();
         case PageType::typeMainPage: return std::make_unique<MainPage>();

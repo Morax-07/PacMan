@@ -1,5 +1,6 @@
 #pragma once 
 #include "raylib.h"
+#include <cmath>
 
 
 
@@ -21,6 +22,7 @@ enum class GhostState {caged, scatter, chase, frightened, eaten};
 namespace Global {
     extern const Color pacBlue;
     extern bool inputAvailable;
+    extern bool bigPelletEaten;
 }
 
 

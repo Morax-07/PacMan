@@ -29,6 +29,8 @@ Block::Block(Vector2 position, short int textureIndex, float rotation, bool flip
     Block::loadedTexturesFlag = true;
 }
 
+
+
 //block's default constructor
 Block::Block(): textureIndex(0), position(Vector2 {0, 0}) {
     if(blockTextures.empty()) loadTextures(); 
@@ -37,8 +39,10 @@ Block::Block(): textureIndex(0), position(Vector2 {0, 0}) {
     this->flipFlag = false;
 }
 
+
+
 //loads all the textures of the blocks
-void Block::loadTextures() {
+auto Block::loadTextures() -> void {
     for(std::size_t i = 0; i < blockTextures.size(); i++) {
         switch(i) {
             case 0:
@@ -89,29 +93,41 @@ void Block::loadTextures() {
 }
 
 //unloads all the textures of the blocksh
-void Block::unloadTextures() {
+auto Block::unloadTextures() -> void {
     for(auto& texture : blockTextures) UnloadTexture(texture);
 }
 
 //gets the block's width
-short int Block::getWidth() noexcept {
+auto Block::getWidth() noexcept -> short {
     return Block::width;
 }
 
 //gets the block's height
-short int Block::getHeight() noexcept {
+auto Block::getHeight() noexcept -> short {
     return Block::height;
 }
 
 //draws the block
-void Block::draw() {
-    Rectangle source = (!flipFlag) ? Rectangle {0, 0, Block::width, Block::height} : Rectangle {22, 22, -Block::width, Block::height};
+auto Block::draw() -> void {
+    Rectangle source = (!flipFlag) ? Rectangle {
+        0, 
+        0, 
+        Block::width, 
+        Block::height
+    } : Rectangle {
+        22, 
+        22, 
+        -Block::width, 
+        Block::height
+    };
 
     DrawTexturePro(blockTextures[textureIndex], source, Rectangle {position.x, position.y, width, height}, Vector2 {0 ,0}, rotation, WHITE);
 }
 
 
-Rectangle Block::hitbox() const {
+
+//returns the block's hitbox translated based on it's rotation
+auto Block::hitbox() const -> Rectangle {
     float x, y;
 
     switch((int)rotation) {

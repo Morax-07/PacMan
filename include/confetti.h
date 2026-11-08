@@ -18,8 +18,9 @@ class Confetti {
 
 
     public:
-        void update(float);
-        void draw(void);
+        auto update(float) -> void;
+        auto draw(void) -> void;
 
         Confetti(void);
+        ~Confetti() = default;
 };

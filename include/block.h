@@ -22,15 +22,15 @@ class Block final {
         static bool loadedTexturesFlag;
 
 
-        static void loadTextures(void);
+        static auto loadTextures(void) -> void;
 
 
     public:
-        static short int getWidth(void) noexcept;
-        static short int getHeight(void) noexcept;
-        static void unloadTextures(void);
-        void draw(void);
-        Rectangle hitbox(void) const;
+        static auto getWidth(void) noexcept -> short;
+        static auto getHeight(void) noexcept -> short;
+        static auto unloadTextures(void) -> void;
+        auto draw(void) -> void;
+        auto hitbox(void) const -> Rectangle;
 
 
 

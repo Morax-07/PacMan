@@ -16,9 +16,11 @@ float Pellet::updateFoodTimer = 0.0f;
 
 //pellet parametrized constructor
 Pellet::Pellet(short int radius, Vector2 position): radius(radius), position(position) {
-    bigFoodFlag = radius > 2;
-    points = (bigFoodFlag) ? 50 : 10;
+    this->bigFoodFlag = radius > 2;
+    this->points = (bigFoodFlag) ? 50 : 10;
 }
+
+
 
 //pellet default constructor
 Pellet::Pellet(): radius(2), position(Vector2 {0, 0}) {
@@ -26,15 +28,19 @@ Pellet::Pellet(): radius(2), position(Vector2 {0, 0}) {
     points = 10;
 }
 
+
+
 //draws the pellet 
-void Pellet::draw() {
+auto Pellet::draw() -> void {
     if(!drawFoodFlag && bigFoodFlag) return;
 
     DrawCircleV(position, radius, color);
 }
 
+
+
 //updates the pellets
-void Pellet::update(float dt) {
+auto Pellet::update(float dt) -> void {
     updateFoodTimer += dt;
 
     if(updateFoodTimer >= updateFoodInterval) {
@@ -44,11 +50,22 @@ void Pellet::update(float dt) {
 }
 
 
-Rectangle Pellet::hitbox() const {
+
+//returns the pellet hitboc
+auto Pellet::hitbox() const -> Rectangle {
     return {position.x - radius, position.y - radius, (float)radius * 2, (float)radius * 2};
 }
 
 
-int Pellet::getPoints() const noexcept {
+
+//returns the points for eating this pellet
+auto Pellet::getPoints() const noexcept -> int {
     return this->points;
+}
+
+
+
+//returns if the food is a pig pellet
+auto Pellet::isBig() const noexcept -> bool {
+    return this->bigFoodFlag;
 }

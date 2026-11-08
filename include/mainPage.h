@@ -3,6 +3,9 @@
 #include "player.h"
 #include "ghost.h"
 #include "redGhost.h"
+#include "pinkGhost.h"
+#include "blueGhost.h"
+#include "orangeGhost.h"
 
 
 
@@ -15,16 +18,19 @@ class MainPage final: public Page {
     private:
         Map map;
         Player pacman;
-        RedGhost g;
+        RedGhost rg;
+        PinkGhost pg;
+        BlueGhost bg;
+        OrangeGhost og;
         Rectangle coverRec;
         bool paused;
         int level;
 
 
     public:
-        void update(float) override;
-        void draw(void) override;
-        void input(void) override;
+        auto update(float) -> void override;
+        auto draw(void) -> void override;
+        auto input(void) -> void override;
 
 
         MainPage(void);

@@ -20,8 +20,8 @@ class Map final {
         
         
 
-        void loadMapComponents(std::vector<std::vector<short int>>&);
-        void loadMapTexture(void);
+        auto loadMapComponents(std::vector<std::vector<short int>>&) -> void;
+        auto loadMapTexture(void) -> void;
         
 
 
@@ -31,10 +31,10 @@ class Map final {
         const int height;
 
 
-        void draw(void);
-        void update(float);
-        std::vector<Block>* getBlocks(void);
-        std::vector<Pellet>* getPellets(void);
+        auto draw(void) -> void;
+        auto update(float) -> void;
+        auto getBlocks(void) const -> const std::vector<Block>*;
+        auto getPellets(void) -> std::vector<Pellet>*;
 
 
         Map();

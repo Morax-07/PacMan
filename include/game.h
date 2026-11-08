@@ -15,14 +15,14 @@ class Game final {
         std::unique_ptr<Page> page;
         PageType currentPageType;
 
-        std::unique_ptr<Page> makePage(PageType);
-        void run(void);
+        auto makePage(PageType) -> std::unique_ptr<Page>;
+        auto draw(void) -> void;
+        auto update(void) -> void;
+        auto input(void) -> void;
 
 
     public:
-        void draw(void);
-        void update(void);
-        void input(void);
+        void run(void);
         
         Game(void);
         ~Game();

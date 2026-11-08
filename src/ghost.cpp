@@ -15,14 +15,23 @@ Texture2D Ghost::frightenedTexture[2] = {};
 Texture2D Ghost::eyes = {};
 const short Ghost::width = 32;
 const short Ghost::height = 32;
-Rectangle Ghost::textureRectangle = {32, 0, Ghost::width, Ghost::height};
+Rectangle Ghost::textureRectangle = {0, 0, Ghost::width, Ghost::height};
 float Ghost::animationInterval = 0.15f;
 float Ghost::animationTimer = 0.0f;
 const Vector2* Ghost::playerPosition = nullptr;
 bool Ghost::playerPositionSet = false;
 Vector2 Ghost::eatenTarget = {14 * 22, 14.5 * 22};
-std::vector<Block>* Ghost::blocks = nullptr;
+const std::vector<Block>* Ghost::blocks = nullptr;
 Vector2 Ghost::mapDimension = {0, 0};
+float Ghost::changeFrightenedTextureInterval = 0.2f;
+float Ghost::changeFrightenedTextureTimer = 0.0f;
+float Ghost::frightenedModeInterval = 6.0f;
+float Ghost::frightenedModeTimer = 0.0f;
+float Ghost::startFrightenedTextureBlinkingTime = 4.0f;
+bool Ghost::startFrightenedTextureBlinking = false;
+short Ghost::frightenedTextureBlinkingIndex = 0;
+bool Ghost::frightenedActive = false;
+const Movement* Ghost::playerMovement = nullptr;
 
 
 
@@ -36,8 +45,10 @@ Ghost::Ghost() {
     this->speed = 120.0f;
     this->movement = Movement::still;
     this->state = GhostState::scatter;
+    this->prevState = GhostState::scatter;
     this->lastCol = -1;
     this->lastRow = -1;
+    this->eyeTextureRectangle = Rectangle{0, 0, 32, 11};
 
 
     if(!staticTexturesLoaded) {
@@ -59,7 +70,7 @@ Ghost::~Ghost() {
 
 
 //sets the pointer to the player position
-void Ghost::setPlayerPosition(const Vector2* playerPosition) {
+auto Ghost::setPlayerPosition(const Vector2* playerPosition) -> void {
     if(!playerPositionSet) {
         Ghost::playerPosition = playerPosition;
         Ghost::playerPositionSet = true;
@@ -69,37 +80,94 @@ void Ghost::setPlayerPosition(const Vector2* playerPosition) {
 
 
 //sets the ghost's texture with its path 
-void Ghost::setGhostTexture(const char* path) {
+auto Ghost::setGhostTexture(const char* path) -> void {
     this->ghostTexture = LoadTexture(path);
 }
 
 
 
 //draws the ghost
-void Ghost::draw() {
-    DrawTextureRec(ghostTexture, Ghost::textureRectangle, position, WHITE);
+auto Ghost::draw() -> void {
+    if(state == GhostState::frightened) {
+        DrawTextureRec(
+            Ghost::frightenedTexture[Ghost::frightenedTextureBlinkingIndex],
+            textureRectangle, 
+            position, 
+            WHITE
+        );
+    } else {
+        DrawTextureRec(ghostTexture, Ghost::textureRectangle, position, WHITE);
+        DrawTextureRec(Ghost::eyes, eyeTextureRectangle, Vector2{position.x, position.y + 6}, WHITE);
+    }
+
+    DrawCircleV(target, 10, WHITE);
 }
 
 
 
 //updates the ghost
-void Ghost::update(float dt) {
-    updateTarget();
+auto Ghost::update(float dt) -> void {
+    //switching to frightened state
+    if(Global::bigPelletEaten && state != GhostState::eaten) {
+        switchToFrightenedState();
+    }
+
+
+    if(state == GhostState::frightened && !Ghost::frightenedActive) {
+        switchFromFrightenedState();
+    }
+
+
+    if(state == GhostState::scatter || state == GhostState::chase) {
+        updateTarget();
+    }
 
 
     updateMovement(dt);
 
 
+    updateEyeTextureRectangle();
+
+
     updatePosition(dt);
 
 
-    updateAnimation(dt);
+    updateAnimationRectangle(dt);
+}
+
+
+
+//updates the timer for the frightened mode and the frightened ghost texture blinking
+auto Ghost::updateFrightenedMode(float dt) -> void {
+    if(!frightenedActive) return;
+
+
+
+    Ghost::frightenedModeTimer += dt;
+
+    if(Ghost::frightenedModeTimer >= Ghost::startFrightenedTextureBlinkingTime) 
+        Ghost::startFrightenedTextureBlinking = true;
+
+    if(Ghost::frightenedModeTimer >= Ghost::frightenedModeInterval) {
+        Ghost::frightenedActive = false;
+        Ghost::frightenedModeTimer = 0.0f;
+        Ghost::startFrightenedTextureBlinking = false;
+        Ghost::frightenedTextureBlinkingIndex = 0;
+    }
+
+    if(Ghost::startFrightenedTextureBlinking) {
+        Ghost::changeFrightenedTextureTimer += dt;
+        if(Ghost::changeFrightenedTextureTimer >= Ghost::changeFrightenedTextureInterval) {
+            Ghost::changeFrightenedTextureTimer -= Ghost::changeFrightenedTextureInterval;
+            Ghost::frightenedTextureBlinkingIndex = 1 - Ghost::frightenedTextureBlinkingIndex;
+        }
+    }
 }
 
 
 
 //updates the ghost's position
-void Ghost::updatePosition(float dt) {
+auto Ghost::updatePosition(float dt) -> void {
     switch(movement) {
         case Movement::up:
             position.y -= speed * dt;
@@ -120,12 +188,19 @@ void Ghost::updatePosition(float dt) {
         default:
             break;
     }
+
+
+    //pacman effect
+    if(position.x <= -64 && movement == Movement::left) 
+        position.x = mapDimension.x + 30;
+    else if(position.x >= mapDimension.x + 30 && movement == Movement::right)
+        position.x = -64;
 }
 
 
 
 //returns the opposite value of the current movement
-Movement Ghost::oppositeMovement() {
+auto Ghost::oppositeMovement() -> Movement {
     switch(movement) {
         case Movement::up: return Movement::down;
         case Movement::down: return Movement::up;
@@ -137,8 +212,10 @@ Movement Ghost::oppositeMovement() {
 
 
 
-//updates the ghost's movement w
-void Ghost::updateMovement(float dt) {
+//updates the ghost's movement
+auto Ghost::updateMovement(float dt) -> void {
+    if(isOutOfBounds()) return;
+
     //caluculates the ghost's center coordinates
     const Vector2 ghostCenter = {
         .x = position.x + (float)Ghost::width / 2,
@@ -190,28 +267,77 @@ void Ghost::updateMovement(float dt) {
 
 
     //choses which type of update should be performed
-    if(
-        state == GhostState::scatter || 
-        state == GhostState::chase || 
-        state == GhostState::eaten
-    ) {
+    if(state == GhostState::frightened) 
+        updateWithoutTarget(currentTileCenter, illegalUp);
+    else 
         updateWithTarget(currentTileCenter, illegalUp);
-    } else {
-        //updateWithoutTarget(dt);
+}
+
+
+
+//updates the movement in frightened state
+auto Ghost::updateWithoutTarget(const Vector2& currentTileCenter, bool illegalUp) -> void {
+    //all the possible directions
+    static constexpr Movement directions[4] = {
+        Movement::up,
+        Movement::down,
+        Movement::left,
+        Movement::right
+    };
+
+
+    std::vector<Movement> possibleDiections;
+    possibleDiections.reserve(4);
+
+
+
+    for(const Movement& movementOption : directions) {
+        //if the possible direction is equal to the opposit of the current movement it skips (no U-turn)
+        if(movementOption == oppositeMovement()) continue;
+
+        //if it is illegal to go up it skips
+        if(movementOption == Movement::up && illegalUp) continue;
+        
+
+        Rectangle neighborHitbox = neighborTileHitbox(currentTileCenter, movementOption);
+        
+        
+        //if the current neighbor isn't free it skips
+        if(!isFree(neighborHitbox)) continue;
+
+
+        //adds the movement option to the possible directions
+        possibleDiections.push_back(movementOption);
     }
+
+
+
+    //if no possible direction is found the only possible one is back
+    if(possibleDiections.empty()) {
+        Movement back = oppositeMovement();
+        if(back != Movement::still && isFree(neighborTileHitbox(currentTileCenter, back)))
+            possibleDiections.push_back(back);
+    }
+
+
+    //if there are still no possible directions the ghost is still
+    if(possibleDiections.empty()) {
+        movement = Movement::still;
+        return;
+    }
+
+
+    //sets the current movement to a random possible direction
+    short index = GetRandomValue(0, possibleDiections.size() - 1);
+    movement = possibleDiections.at(index);
 }
 
 
 
 //updates the movement with a target
-void Ghost::updateWithTarget(const Vector2& currentTileCenter, bool illegalUp) {
-    //calculates the distance from the coordinates passed to the current target
-    static const auto distanceFromTarget = [&](float x, float y) -> float {
-        return std::hypotf(x - target.x, y - target.y);
-    };
-
+auto Ghost::updateWithTarget(const Vector2& currentTileCenter, bool illegalUp) -> void {
     //all the possible directions
-    static const Movement directions[4] = {
+    static constexpr Movement directions[4] = {
         Movement::up,
         Movement::down,
         Movement::left,
@@ -224,16 +350,16 @@ void Ghost::updateWithTarget(const Vector2& currentTileCenter, bool illegalUp) {
     Movement bestMovement = Movement::still;
     float bestDistance = std::numeric_limits<float>::max();
 
-    for(const Movement& possibleDirection : directions) {
+    for(const Movement& movementOption : directions) {
         //if the possible direction is equal to the opposit of the current movement it skips (no U-turn)
-        if(possibleDirection == oppositeMovement()) continue;
+        if(movementOption == oppositeMovement()) continue;
 
         //if it is illegal to go up it skips
-        if(possibleDirection == Movement::up && illegalUp) continue;
+        if(movementOption == Movement::up && illegalUp) continue;
 
 
 
-        Rectangle neighborHitbox = neighborTileHitbox(currentTileCenter, possibleDirection);
+        Rectangle neighborHitbox = neighborTileHitbox(currentTileCenter, movementOption);
         
         
         //if the current neighbor isn't free it skips
@@ -251,7 +377,7 @@ void Ghost::updateWithTarget(const Vector2& currentTileCenter, bool illegalUp) {
         //is updated with the current possible direction
         if(distance < bestDistance) {
             bestDistance = distance;
-            bestMovement = possibleDirection;
+            bestMovement = movementOption;
         }
     }
 
@@ -272,7 +398,7 @@ void Ghost::updateWithTarget(const Vector2& currentTileCenter, bool illegalUp) {
 
 
 //unloads all the static textures
-void Ghost::unloadStaticTextures() {
+auto Ghost::unloadStaticTextures() -> void {
     UnloadTexture(Ghost::eyes);
     UnloadTexture(Ghost::frightenedTexture[0]);
     UnloadTexture(Ghost::frightenedTexture[1]);
@@ -281,7 +407,7 @@ void Ghost::unloadStaticTextures() {
 
 
 //updates the ghosts animation rectangle
-void Ghost::updateAnimation(float dt) {
+auto Ghost::updateAnimationRectangle(float dt) -> void {
     Ghost::animationTimer += dt;
 
     if(Ghost::animationTimer >= Ghost::animationInterval) {
@@ -293,7 +419,7 @@ void Ghost::updateAnimation(float dt) {
 
 
 //gets the neighbor tile hitbox for the current movement option
-Rectangle Ghost::neighborTileHitbox(const Vector2& currentTileCenter, Movement movementOption) const {
+auto Ghost::neighborTileHitbox(const Vector2& currentTileCenter, Movement movementOption) const -> Rectangle{
     const float hitboxDimension = 21.9f;
 
     /*
@@ -317,30 +443,125 @@ Rectangle Ghost::neighborTileHitbox(const Vector2& currentTileCenter, Movement m
 
 
 //gets the ghost's body hitbox
-Rectangle Ghost::bodyHitbox() const {
+auto Ghost::bodyHitbox() const -> Rectangle {
     return Rectangle{position.x + (float)Ghost::width / 2 - 10.95f, position.y + (float)Ghost::height / 2 - 10.95f, 21.9f, 21.9f};
 }
 
 
 
 //sets the pointer to the map blocks
-void Ghost::setBlocks(std::vector<Block>* blocks) {
+auto Ghost::setBlocks(const std::vector<Block>* blocks) -> void {
     Ghost::blocks = blocks;
 }
 
 
 
 //sets the map dimension
-void Ghost::setMapDimension(Vector2&& mapDimension) {
+auto Ghost::setMapDimension(Vector2&& mapDimension) -> void {
     Ghost::mapDimension = mapDimension;
 }
 
 
 
 //returns if the block hitbox collides with the current calculated neighbor tile hitbox
-bool Ghost::isFree(const Rectangle& neighbor) {
+auto Ghost::isFree(const Rectangle& neighbor) -> bool {
     for(const auto& block : *blocks) {
         if(CheckCollisionRecs(neighbor, block.hitbox())) return false;
     }
     return true;
+}
+
+
+
+//returns if the ghost is out of bounds
+auto Ghost::isOutOfBounds() -> bool {
+    return (position.x <= 0 || position.x >= mapDimension.x - 22);
+}
+
+
+
+//sets up the frightened state
+auto Ghost::switchToFrightenedState() -> void {
+    //eaten already excluded
+    if(state != GhostState::frightened) movement = oppositeMovement();
+
+    //sets the previous state
+    if(state == GhostState::scatter || state == GhostState::chase || state == GhostState::caged) {
+        prevState = state;
+    }
+
+    speed = 60.0f;
+    Ghost::frightenedModeTimer = 0.0f;
+    Ghost::changeFrightenedTextureTimer = 0.0f;
+    Ghost::frightenedTextureBlinkingIndex = 0;
+    Ghost::startFrightenedTextureBlinking = false;
+    Ghost::frightenedActive = true;
+    state = GhostState::frightened;
+}
+
+
+
+//goes back from the frightened state to the previous state
+auto Ghost::switchFromFrightenedState() -> void {
+    state = prevState;
+    movement = oppositeMovement();
+    speed = 120.0f;
+}
+
+
+
+//updates the eye orientation based on the movement
+auto Ghost::updateEyeTextureRectangle() -> void {
+    switch(movement) {
+        case Movement::up:
+            eyeTextureRectangle = Rectangle{0, 0, 32, 11};
+            break;
+
+        case Movement::down:
+            eyeTextureRectangle = Rectangle{0, 0, 32, -11};
+            break;
+
+        case Movement::left:
+            eyeTextureRectangle = Rectangle{32, 0, 32, 11};
+            break;
+
+        case Movement::right:
+            eyeTextureRectangle = Rectangle{32, 11, -32, 11};
+            break;
+
+        default:
+            break;
+    }
+}
+
+
+
+//updates the ghost target
+auto Ghost::updateTarget() -> void {
+    switch(state) {
+        case GhostState::scatter:
+            target = scatterTarget;
+            break;
+
+        case GhostState::chase:
+            updateChaseTarget();
+            break;
+
+        default:
+            break;
+    }
+}
+
+
+
+//sets the pointer to the player movement
+auto Ghost::setPlayerMovement(const Movement* playerMovement) -> void {
+    Ghost::playerMovement = playerMovement;
+}
+
+
+
+//calculates the distance from the coordinates passed to the current target
+auto Ghost::distanceFromTarget(float x, float y) -> float {
+    return std::hypotf(x - target.x, y - target.y);
 }

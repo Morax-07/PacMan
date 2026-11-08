@@ -17,12 +17,10 @@ RedGhost::RedGhost(): Ghost() {
 
 RedGhost::~RedGhost() {}
 
-void RedGhost::setScatterTarget() {
-    this->scatterTarget = {Ghost::mapDimension.x, -100};
-
-    if(state == GhostState::scatter) this->target = scatterTarget;
+auto RedGhost::setScatterTarget() -> void {
+    this->scatterTarget = {Ghost::mapDimension.x - 55, -77};
 }
 
-void RedGhost::updateTarget() {
-    target = *playerPosition;
+auto RedGhost::updateChaseTarget() -> void {
+    target = Vector2{playerPosition->x + 17, playerPosition->y + 16};
 }

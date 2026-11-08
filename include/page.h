@@ -11,9 +11,9 @@
 
 class Page {
     public: 
-        virtual void draw(void) = 0;
-        virtual void update(float) = 0;
-        virtual void input(void) = 0;
+        virtual auto draw(void) -> void = 0;
+        virtual auto update(float) -> void = 0;
+        virtual auto input(void) -> void = 0;
 
         static Font font;
 

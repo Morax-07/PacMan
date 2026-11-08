@@ -26,43 +26,44 @@ class Player final {
         int textureRecXDirection;
         Movement movement;
         Movement nextMovement;
+        Movement currentDirection;
         float animationInterval;
         float animationTimer;
         float rotation;
         std::vector<Pellet>* pellets;
-        std::vector<Block>* blocks;
+        const std::vector<Block>* blocks;
         int points;
         bool stoppedForCollision;
         float positionBounds[2];
-        bool outOfBounds;
 
 
-        Rectangle mouthHitbox(void) const;
-        Rectangle bodyHitbox(void) const;
-        Rectangle upHitbox(void) const;
-        Rectangle downHitbox(void) const;
-        Rectangle leftHitbox(void) const;
-        Rectangle rightHitbox(void) const;
-        void checkAndSetNextMovement(std::function<Rectangle(void)>, float);
-        void updateMovement(float);
-        void updatePosition(float);
-        void updateAnimation(float);
-        void updateOutOfBounds(void);
+        auto mouthHitbox(void) const -> Rectangle;
+        auto bodyHitbox(void) const -> Rectangle;
+        auto upHitbox(void) const -> Rectangle;
+        auto downHitbox(void) const -> Rectangle;
+        auto leftHitbox(void) const -> Rectangle;
+        auto rightHitbox(void) const -> Rectangle;
+        auto checkAndSetNextMovement(std::function<Rectangle(void)>, float) -> void;
+        auto updateMovement(float) -> void;
+        auto updatePosition(float) -> void;
+        auto updateAnimation(float) -> void;
+        auto isOutOfBounds(void) -> bool;
 
 
 
     public:
-        void drawLife(Vector2);
-        void draw(void);
-        void input(void);
-        void update(float);
-        void setPellets(std::vector<Pellet>*);
-        void setBlocks(std::vector<Block>*);
-        int getPoints(void) const noexcept;
-        void checkPelletsCollision(void);
-        void checkBodyBlocksCollision(void);
-        void setRightPositionBound(float);
-        const Vector2* getPosition(void) const noexcept;
+        auto drawLife(Vector2) -> void;
+        auto draw(void) -> void;
+        auto input(void) -> void;
+        auto update(float) -> void;
+        auto setPellets(std::vector<Pellet>*) -> void;
+        auto setBlocks(const std::vector<Block>*) -> void;
+        auto getPoints(void) const noexcept -> int;
+        auto checkPelletsCollision(void) -> void;
+        auto checkBodyBlocksCollision(void) -> void;
+        auto setRightPositionBound(float) -> void;
+        auto getPosition(void) const noexcept -> const Vector2*;
+        auto getMovement(void) const noexcept -> const Movement*;
 
 
         const short int width;

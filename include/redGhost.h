@@ -9,12 +9,13 @@
 
 
 class RedGhost final: public Ghost {
-    protected:
-        void updateTarget(void) override;
+    private:
+        auto updateChaseTarget(void) -> void override;
 
 
     public:
-        void setScatterTarget(void);
+        auto setScatterTarget(void) -> void override;
+
 
         RedGhost();
         ~RedGhost() override;

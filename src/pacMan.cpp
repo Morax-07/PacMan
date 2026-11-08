@@ -1,14 +1,4 @@
-#ifndef __cplusplus
-#error NO C++ COMPILER AVAILABLE 
-#endif
-
-
-
-
-
 #include "./../include/game.h"
-
-
 
 
 
@@ -16,5 +6,8 @@
 
 int main() {
     Game game = Game();
+    game.run();
+
+
     return 0;
 }

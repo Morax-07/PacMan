@@ -33,14 +33,14 @@ class MenuPage final: public Page {
         bool showPressStart;
 
 
-        float logoTotalFadeTime(void) const noexcept;
+        auto logoTotalFadeTime(void) const noexcept -> float;
 
 
     public:
-        void draw(void) override;
-        void update(float) override;
-        void input(void) override;
-        bool isPageChanging(void) const noexcept;
+        auto draw(void) -> void override;
+        auto update(float) -> void override;
+        auto input(void) -> void override;
+        auto isPageChanging(void) const noexcept -> bool;
 
 
 

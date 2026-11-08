@@ -25,7 +25,7 @@ Player::Player(): width(34), height(32) {
     this->points = 0;
     this->stoppedForCollision = false;
     this->positionBounds[0] = 0;
-    this->outOfBounds = false;
+    this->currentDirection = Movement::still;
 }
 
 
@@ -39,7 +39,7 @@ Player::~Player() {
 
 
 //draws pacman lifes to the bottom right of the screen
-void Player::drawLife(Vector2 position) {
+auto Player::drawLife(Vector2 position) -> void {
     for(int i = 0; i < life - 1; i++) {
         DrawTexturePro(
             texture, 
@@ -56,7 +56,7 @@ void Player::drawLife(Vector2 position) {
 
 
 //draws pacman
-void Player::draw() {
+auto Player::draw() -> void {
     DrawTexturePro(
         texture, 
         textureRectangle, 
@@ -76,7 +76,7 @@ void Player::draw() {
 
 //checks the user inputs for the player
 //updates the nextMovement attribute
-void Player::input() {
+auto Player::input() -> void {
     KeyboardKey pressedKey = (KeyboardKey)GetKeyPressed();
     switch(pressedKey) {
         case KEY_UP:
@@ -103,9 +103,13 @@ void Player::input() {
 
 
 //updates the player 
-void Player::update(float dt) {
+auto Player::update(float dt) -> void {
     //updates the movement to nextMovement if possible
     updateMovement(dt);
+
+
+    //sets the current direction for the ghosts target updating
+    if(movement != Movement::still) currentDirection = movement;
 
 
     //stops updating position and animation if the player collides with an obstacle
@@ -114,9 +118,6 @@ void Player::update(float dt) {
 
     //updates the position with movement
     updatePosition(dt);
-
-
-    updateOutOfBounds();
     
 
     //updates the player's animation
@@ -126,14 +127,14 @@ void Player::update(float dt) {
 
 
 //return the player's body hitbox for block collision detection
-Rectangle Player::bodyHitbox() const {
+auto Player::bodyHitbox() const -> Rectangle {
     return Rectangle{position.x + (float)width / 2 - 10.95f, position.y + (float)height / 2 - 10.95f, 21.9f, 21.9f};
 }
 
 
 
 //return the player's mouth hitbox for pellet collision detection
-Rectangle Player::mouthHitbox() const {
+auto Player::mouthHitbox() const -> Rectangle {
     return Rectangle{position.x + 2.5f, position.y + 2.5f, (float)width - 5, (float)height - 5};
 }
 
@@ -141,7 +142,7 @@ Rectangle Player::mouthHitbox() const {
 
 //returns the hitbox directly above the player
 //for movement update with nextMovement
-Rectangle Player::upHitbox() const {
+auto Player::upHitbox() const -> Rectangle {
     return Rectangle{position.x + (float)width / 2 - 10.95f, position.y - 21.9f, 21.9f, 21.9f};
 }
 
@@ -149,7 +150,7 @@ Rectangle Player::upHitbox() const {
 
 //returns the hitbox directly under the player
 //for movement update with nextMovement
-Rectangle Player::downHitbox() const {
+auto Player::downHitbox() const -> Rectangle {
     return Rectangle{position.x + (float)width / 2 - 10.95f, position.y + (float)height, 21.9f, 21.9f};
 }
 
@@ -157,7 +158,7 @@ Rectangle Player::downHitbox() const {
 
 //returns the hitbox directy to the left of the player
 //for movement update with nextMovement
-Rectangle Player::leftHitbox() const {
+auto Player::leftHitbox() const -> Rectangle {
     return Rectangle{position.x - 21.9f, position.y + (float)height / 2 - 10.95f, 21.9f, 21.9f};
 }
 
@@ -165,7 +166,7 @@ Rectangle Player::leftHitbox() const {
 
 //returns the hitbox directly to the right of the player
 //for movement update with nextMovement
-Rectangle Player::rightHitbox() const {
+auto Player::rightHitbox() const -> Rectangle {
     return Rectangle{position.x + (float)width, position.y + (float)height / 2 - 10.95f, 21.9f, 21.9f};
 }
 
@@ -173,7 +174,7 @@ Rectangle Player::rightHitbox() const {
 
 //sets the pellets pointer to 
 //std::vector<Pellet> Map::pellets
-void Player::setPellets(std::vector<Pellet>* pellets) {
+auto Player::setPellets(std::vector<Pellet>* pellets) -> void {
     this->pellets = pellets;
 }
 
@@ -181,7 +182,7 @@ void Player::setPellets(std::vector<Pellet>* pellets) {
 
 //sets the blocks pointer to
 //std::vector<Block> Map::blocks
-void Player::setBlocks(std::vector<Block>* blocks) {
+auto Player::setBlocks(const std::vector<Block>* blocks) -> void {
     this->blocks = blocks;
 }
 
@@ -189,10 +190,11 @@ void Player::setBlocks(std::vector<Block>* blocks) {
 
 //checks the collision between mouth hitbox and pellet hitbox
 //erases the pellet if collision is detected
-void Player::checkPelletsCollision() {
+auto Player::checkPelletsCollision() -> void {
     std::erase_if(*pellets, [&](const Pellet& pellet) -> bool {
         if(CheckCollisionRecs(pellet.hitbox(), mouthHitbox())) {
             points += pellet.getPoints();
+            Global::bigPelletEaten = pellet.isBig();
             return true;
         }
         return false;
@@ -204,7 +206,7 @@ void Player::checkPelletsCollision() {
 //checks the collision between body gitbox and block hitbox
 //backtracks the player position if collision is detected to "free" the hitbox from the block
 //sets stoppedForCollision to true if the collision is detected
-void Player::checkBodyBlocksCollision() {
+auto Player::checkBodyBlocksCollision() -> void {
     bool collisionDetected = false;
 
     for(const auto& block : *blocks) {
@@ -241,7 +243,7 @@ void Player::checkBodyBlocksCollision() {
 
 
 //returns the value of the point to draw in MainPage
-int Player::getPoints() const noexcept {
+auto Player::getPoints() const noexcept -> int {
     return this->points;
 }
 
@@ -250,8 +252,8 @@ int Player::getPoints() const noexcept {
 //checks if the external hitbox in the same direction of the movement collides with a wall
 //it slides the hitbox rectangle for the player alignement in the interval [-speed * dt * 1.5f, +speed * dt * 1.5f]
 //it corrects the position of the player by an offset to align the player to the corridor
-void Player::checkAndSetNextMovement(std::function<struct Rectangle(void)> hitbox, float dt) {
-    if(outOfBounds) return;
+auto Player::checkAndSetNextMovement(std::function<struct Rectangle(void)> hitbox, float dt) -> void {
+    if(isOutOfBounds()) return;
 
     const float tolerance = speed * dt * 1.5f; 
     const float step = 0.05f;      
@@ -280,6 +282,7 @@ void Player::checkAndSetNextMovement(std::function<struct Rectangle(void)> hitbo
                 //if the slided hitbox is free, it alignes the player
                 if(vertical) position.x += sign * offset;
                 else         position.y += sign * offset;
+
                 movement = nextMovement;
 
                 //since the movement is set to nextMovement, stoppedForCollision is set to false
@@ -295,7 +298,7 @@ void Player::checkAndSetNextMovement(std::function<struct Rectangle(void)> hitbo
 
 
 //updates the movement by checking which is the nextMovement and checking if it can be set
-void Player::updateMovement(float dt) {
+auto Player::updateMovement(float dt) -> void {
     switch(nextMovement) {
         case Movement::up:
             checkAndSetNextMovement([this]() -> Rectangle {return upHitbox();}, dt);
@@ -321,7 +324,7 @@ void Player::updateMovement(float dt) {
 
 
 //updates the position by switching the current movement
-void Player::updatePosition(float dt) {
+auto Player::updatePosition(float dt) -> void {
     switch (movement) {
         case Movement::up:
             position.y -= speed * dt;
@@ -359,7 +362,7 @@ void Player::updatePosition(float dt) {
 
 
 //updates the player animation
-void Player::updateAnimation(float dt) {
+auto Player::updateAnimation(float dt) -> void {
     if(movement != Movement::still) {
         animationTimer += dt;
 
@@ -377,25 +380,27 @@ void Player::updateAnimation(float dt) {
 
 
 //sets the right coordinate for the map boundries
-void Player::setRightPositionBound(float x) {
+auto Player::setRightPositionBound(float x) -> void {
     positionBounds[1] = x;
 }
 
 
 
 //checks if the player is out of bounds and sets outOfBound
-void Player::updateOutOfBounds() {
-    if(position.x <= positionBounds[0] || position.x >= positionBounds[1] - (float)width / 2) {
-        outOfBounds = true;
-        return;
-    }
-
-    outOfBounds = false;
+auto Player::isOutOfBounds() -> bool {
+    return (position.x <= positionBounds[0] || position.x >= positionBounds[1] - (float)width / 2);
 }
 
 
 
 //returns a pointer to the player position
-const Vector2* Player::getPosition() const noexcept {
+auto Player::getPosition() const noexcept -> const Vector2* {
     return &this->position;
+}
+
+
+
+//returns a pointer to the player movement
+auto Player::getMovement() const noexcept -> const Movement* {
+    return &this->currentDirection;
 }

@@ -13,13 +13,17 @@ Confetti::Confetti():
     this->position = Vector2 {(float)GetRandomValue(0, GetScreenWidth() - 4), (float)GetRandomValue(-GetScreenHeight(), -4)};
 }
 
+
+
 //Confetti's draw method
-void Confetti::draw() {
+auto Confetti::draw() -> void {
     DrawRectangleV(position, Vector2 {(float)width, (float)height}, color);
 }
 
+
+
 //Confetti's update method
-void Confetti::update(float dt) {
+auto Confetti::update(float dt) -> void {
     position.y += speed * dt;
 
     if(position.y >= GetScreenHeight() - 4) position.y = -4;
