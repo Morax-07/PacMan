@@ -24,3 +24,11 @@ auto RedGhost::setScatterTarget() -> void {
 auto RedGhost::updateChaseTarget() -> void {
     target = Vector2{playerPosition->x + 17, playerPosition->y + 16};
 }
+
+auto RedGhost::getPosition() -> const Vector2* {
+    return &this->position;
+}
+
+auto RedGhost::drawTarget() -> void {
+    DrawCircleV(target, 10, RED);
+}

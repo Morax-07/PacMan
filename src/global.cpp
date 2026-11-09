@@ -9,3 +9,4 @@
 const Color Global::pacBlue = {63, 72, 204, 255};
 bool Global::inputAvailable = true;
 bool Global::bigPelletEaten = false;
+const bool Global::visualTargetDebug = false;

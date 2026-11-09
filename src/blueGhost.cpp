@@ -8,7 +8,9 @@
 
 
 BlueGhost::BlueGhost(): Ghost() {
+    this->redGhostPosition = nullptr;
     this->position = Vector2{14 * 22 - (float)Ghost::width / 2, 11.5f * 22 - (float)Ghost::height / 2};
+    this->playerDirection = {0, 0};
 }
 
 BlueGhost::~BlueGhost() {}
@@ -18,33 +20,44 @@ auto BlueGhost::setScatterTarget() -> void {
 }
 
 auto BlueGhost::updateChaseTarget() -> void {
-    // Vector2 playerDirection;
+    switch(*Ghost::playerMovement) {
+        case Movement::up:
+            playerDirection = Vector2{playerPosition->x + 17 - 22 * 2, playerPosition->y + 16 - 22 * 2};
+            break;
 
-    // switch(*Ghost::playerMovement) {
-    //     case Movement::up:
-    //         playerDirection = Vector2{playerPosition->x + 17 - 22 * 2, playerPosition->y + 16 - 22 * 2};
-    //         break;
+        case Movement::down:
+            playerDirection = Vector2{playerPosition->x + 17, playerPosition->y + 16 + 22 * 2};
+            break;
 
-    //     case Movement::down:
-    //         playerDirection = Vector2{playerPosition->x + 17, playerPosition->y + 16 + 22 * 2};
-    //         break;
+        case Movement::left:
+            playerDirection = Vector2{playerPosition->x + 17 - 22 * 2, playerPosition->y + 16};
+            break;
 
-    //     case Movement::left:
-    //         playerDirection = Vector2{playerPosition->x + 17 - 22 * 2, playerPosition->y + 16};
-    //         break;
+        case Movement::right:
+            playerDirection = Vector2{playerPosition->x + 17 + 22 * 2, playerPosition->y + 16};
+            break;
 
-    //     case Movement::right:
-    //         playerDirection = Vector2{playerPosition->x + 17 + 22 * 2, playerPosition->y + 16};
-    //         break;
+        default:
+            playerDirection = Vector2{playerPosition->x + 17 - 22 * 2, playerPosition->y + 16 - 22 * 2};
+            break;
+    }
 
-    //     default:
-    //         playerDirection = Vector2{playerPosition->x + 17 - 22 * 2, playerPosition->y + 16 - 22 * 2};
-    //         break;
-    // }
+    
 
 
-    // target = {
-    //     .x = playerPosition->x + 17 - (playerDirection.x - (playerPosition->x + 17)),
-    //     .y = playerPosition->y + 16 - (playerDirection.y - (playerPosition->y + 16))
-    // };
+    target = {
+        .x = playerDirection.x - ((redGhostPosition->x + (float)Ghost::width / 2) - playerDirection.x),
+        .y = playerDirection.y - ((redGhostPosition->y + (float)Ghost::height / 2) - playerDirection.y)
+    };
+}
+
+auto BlueGhost::setRedGhostPosition(const Vector2* redGhostPosition) -> void {
+    this->redGhostPosition = redGhostPosition;
+}
+
+auto BlueGhost::drawTarget(void) -> void {
+    DrawCircleV(target, 10, BLUE);
+    DrawCircleV(playerDirection, 5, WHITE);
+    DrawLine(redGhostPosition->x + (float)Ghost::width / 2, redGhostPosition->y + (float)Ghost::height / 2, playerDirection.x, playerDirection.y, WHITE);
+    DrawLineV(playerDirection, target, BLUE);
 }

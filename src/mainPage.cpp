@@ -32,6 +32,8 @@ MainPage::MainPage(): Page() {
     bg.setGhostTexture("../bin/data/texture/blueGhost.png");
     og.setGhostTexture("../bin/data/texture/orangeGhost.png");
 
+    bg.setRedGhostPosition(rg.getPosition());
+
     
 
 
@@ -58,6 +60,14 @@ auto MainPage::draw() -> void {
     pg.draw();
     bg.draw();
     og.draw();
+
+    if(Global::visualTargetDebug) {
+        rg.drawTarget();
+        pg.drawTarget();
+        bg.drawTarget();
+        og.drawTarget();
+    }
+    
 
     
 

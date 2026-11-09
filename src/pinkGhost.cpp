@@ -40,3 +40,7 @@ auto PinkGhost::updateChaseTarget() -> void {
             break;
     }
 }
+
+auto PinkGhost::drawTarget() -> void {
+    DrawCircleV(target, 10, PINK);
+}

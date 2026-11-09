@@ -23,6 +23,7 @@ namespace Global {
     extern const Color pacBlue;
     extern bool inputAvailable;
     extern bool bigPelletEaten;
+    extern const bool visualTargetDebug;
 }
 
 

@@ -83,6 +83,7 @@ class Ghost {
         static auto setPlayerPosition(const Vector2*) -> void;
         static auto setPlayerMovement(const Movement*) -> void;
         static auto updateFrightenedMode(float) -> void;
+        virtual auto drawTarget(void) -> void = 0;
         auto update(float) -> void;
         auto draw(void) -> void;
         auto bodyHitbox(void) const -> Rectangle;

@@ -15,6 +15,8 @@ class RedGhost final: public Ghost {
 
     public:
         auto setScatterTarget(void) -> void override;
+        auto getPosition(void) -> const Vector2*;
+        auto drawTarget(void) -> void override;
 
 
         RedGhost();

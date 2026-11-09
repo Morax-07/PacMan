@@ -15,6 +15,7 @@ class OrangeGhost final: public Ghost {
 
     public:
         auto setScatterTarget(void) -> void override;
+        auto drawTarget(void) -> void override;
 
 
         OrangeGhost();

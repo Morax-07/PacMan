@@ -44,7 +44,7 @@ const Movement* Ghost::playerMovement = nullptr;
 Ghost::Ghost() {
     this->speed = 120.0f;
     this->movement = Movement::still;
-    this->state = GhostState::scatter;
+    this->state = GhostState::chase;
     this->prevState = GhostState::scatter;
     this->lastCol = -1;
     this->lastRow = -1;
@@ -99,8 +99,6 @@ auto Ghost::draw() -> void {
         DrawTextureRec(ghostTexture, Ghost::textureRectangle, position, WHITE);
         DrawTextureRec(Ghost::eyes, eyeTextureRectangle, Vector2{position.x, position.y + 6}, WHITE);
     }
-
-    DrawCircleV(target, 10, WHITE);
 }
 
 

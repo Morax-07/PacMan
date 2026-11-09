@@ -1,6 +1,6 @@
 #include "../include/orangeGhost.h"
 #include <raylib.h>
-
+#include "raymath.h"
 
 
 
@@ -30,4 +30,18 @@ auto OrangeGhost::updateChaseTarget() -> void {
 
 
     target = Vector2{playerPosition->x + 17, playerPosition->y + 16};
+}
+
+auto OrangeGhost::drawTarget() -> void {
+    if(Vector2Equals(target, scatterTarget)) {
+        DrawCircleV({11, mapDimension.y - 11}, 10, ORANGE);
+    } else {
+        DrawCircleLinesV({
+        target
+        }, 15, ORANGE);
+    }
+    DrawCircleLinesV({
+        playerPosition->x + 17,
+        playerPosition->y + 16
+    }, 22*8, ORANGE);
 }
