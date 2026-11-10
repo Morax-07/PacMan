@@ -36,6 +36,7 @@ class Ghost {
         float lastRow;
         Texture2D ghostTexture;
         GhostState prevState;
+        bool reverse;
 
 
         static auto updateAnimationRectangle(float) -> void;

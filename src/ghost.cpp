@@ -49,6 +49,7 @@ Ghost::Ghost() {
     this->lastCol = -1;
     this->lastRow = -1;
     this->eyeTextureRectangle = Rectangle{0, 0, 32, 11};
+    this->reverse = false;
 
 
     if(!staticTexturesLoaded) {
@@ -214,6 +215,8 @@ auto Ghost::oppositeMovement() -> Movement {
 auto Ghost::updateMovement(float dt) -> void {
     if(isOutOfBounds()) return;
 
+
+
     //caluculates the ghost's center coordinates
     const Vector2 ghostCenter = {
         .x = position.x + (float)Ghost::width / 2,
@@ -261,6 +264,24 @@ auto Ghost::updateMovement(float dt) -> void {
     ) {
         illegalUp = true;
     }
+
+
+    //reverses the movement for switching state
+    if(reverse) {
+        reverse = false;
+
+        Movement back = oppositeMovement();
+
+        if(
+            back != Movement::still && 
+            !(back == Movement::up && illegalUp) && 
+            isFree(neighborTileHitbox(currentTileCenter, back))
+        ) {
+            movement = back;
+            return;
+        }
+    }
+
 
 
 
@@ -481,8 +502,10 @@ auto Ghost::isOutOfBounds() -> bool {
 //sets up the frightened state
 auto Ghost::switchToFrightenedState() -> void {
     //eaten already excluded
-    if(state != GhostState::frightened) movement = oppositeMovement();
+    if(state != GhostState::frightened)
+        reverse = true;
 
+        
     //sets the previous state
     if(state == GhostState::scatter || state == GhostState::chase || state == GhostState::caged) {
         prevState = state;
@@ -502,7 +525,7 @@ auto Ghost::switchToFrightenedState() -> void {
 //goes back from the frightened state to the previous state
 auto Ghost::switchFromFrightenedState() -> void {
     state = prevState;
-    movement = oppositeMovement();
+    reverse = true;
     speed = 120.0f;
 }
 
