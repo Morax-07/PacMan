@@ -7,16 +7,29 @@
 
 
 
+
+//pinkGhost destructor
 PinkGhost::PinkGhost(): Ghost() {
-    this->position = Vector2{14 * 22 - (float)Ghost::width / 2, 11.5f * 22 - (float)Ghost::height / 2};
+    this->state = GhostState::caged;
+    this->minPelletsForSpown = 0;
+    this->position = Vector2{14 * 22 - (float)Ghost::width * 1.75f, 14.5f * 22 - (float)Ghost::height / 2};
 }
 
+
+
+//pinkGhost destructor
 PinkGhost::~PinkGhost() {}
 
+
+
+//sets the pinkGhost scatter target
 auto PinkGhost::setScatterTarget() -> void {
     this->scatterTarget = Vector2{55, -77};
 }
 
+
+
+//updates the pinkGhost chase target
 auto PinkGhost::updateChaseTarget() -> void {
     switch(*Ghost::playerMovement) {
         case Movement::up:
@@ -41,6 +54,9 @@ auto PinkGhost::updateChaseTarget() -> void {
     }
 }
 
+
+
+//debug method to draw pinkGhost target
 auto PinkGhost::drawTarget() -> void {
     DrawCircleV(target, 10, PINK);
 }

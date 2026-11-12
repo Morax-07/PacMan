@@ -7,6 +7,9 @@
 #include "pellet.h"
 #include "block.h"
 #include <functional>
+#include "ghost.h"
+
+
 
 
 
@@ -35,6 +38,10 @@ class Player final {
         int points;
         bool stoppedForCollision;
         float positionBounds[2];
+        int eatenPellets;
+        float notEatingInterval;
+        float notEatingTimer;
+        bool notEating;
 
 
         auto mouthHitbox(void) const -> Rectangle;
@@ -48,6 +55,7 @@ class Player final {
         auto updatePosition(float) -> void;
         auto updateAnimation(float) -> void;
         auto isOutOfBounds(void) -> bool;
+        auto updateNotEating(float) -> void;
 
 
 
@@ -61,9 +69,13 @@ class Player final {
         auto getPoints(void) const noexcept -> int;
         auto checkPelletsCollision(void) -> void;
         auto checkBodyBlocksCollision(void) -> void;
+        auto checkGhostCollision(const Ghost*) -> void;
         auto setRightPositionBound(float) -> void;
         auto getPosition(void) const noexcept -> const Vector2*;
         auto getMovement(void) const noexcept -> const Movement*;
+        auto getEatenPellets(void) const noexcept -> const int*;
+        auto isNotEating(void) const noexcept -> bool;
+        auto resetNotEating(void) -> void;
 
 
         const short int width;

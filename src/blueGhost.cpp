@@ -7,18 +7,33 @@
 
 
 
+
+
+
+//blueGhost constructor
 BlueGhost::BlueGhost(): Ghost() {
     this->redGhostPosition = nullptr;
-    this->position = Vector2{14 * 22 - (float)Ghost::width / 2, 11.5f * 22 - (float)Ghost::height / 2};
+    this->position = Vector2{14 * 22 - (float)Ghost::width / 2, 14.5f * 22 - (float)Ghost::height / 2};
+    this->state = GhostState::caged;
+    this->minPelletsForSpown = 30;
     this->playerDirection = {0, 0};
 }
 
+
+
+//blueGhost destructor
 BlueGhost::~BlueGhost() {}
 
+
+
+//sets the redGhost scatter target
 auto BlueGhost::setScatterTarget() -> void {
     this->scatterTarget = Vector2{mapDimension.x - 55, mapDimension.y + 77};
 }
 
+
+
+//updates the redGhost chase target
 auto BlueGhost::updateChaseTarget() -> void {
     switch(*Ghost::playerMovement) {
         case Movement::up:
@@ -51,10 +66,16 @@ auto BlueGhost::updateChaseTarget() -> void {
     };
 }
 
+
+
+//sets a pointer to the redGhost position
 auto BlueGhost::setRedGhostPosition(const Vector2* redGhostPosition) -> void {
     this->redGhostPosition = redGhostPosition;
 }
 
+
+
+//debug method to draw blueGhost target
 auto BlueGhost::drawTarget(void) -> void {
     DrawCircleV(target, 10, BLUE);
     DrawCircleV(playerDirection, 5, WHITE);

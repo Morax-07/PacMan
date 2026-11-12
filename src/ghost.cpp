@@ -10,13 +10,15 @@
 
 
 
+
+
 bool Ghost::staticTexturesLoaded = false;
 Texture2D Ghost::frightenedTexture[2] = {};
 Texture2D Ghost::eyes = {};
 const short Ghost::width = 32;
 const short Ghost::height = 32;
 Rectangle Ghost::textureRectangle = {0, 0, Ghost::width, Ghost::height};
-float Ghost::animationInterval = 0.15f;
+float Ghost::animationInterval = 0.3f;
 float Ghost::animationTimer = 0.0f;
 const Vector2* Ghost::playerPosition = nullptr;
 bool Ghost::playerPositionSet = false;
@@ -32,6 +34,10 @@ bool Ghost::startFrightenedTextureBlinking = false;
 short Ghost::frightenedTextureBlinkingIndex = 0;
 bool Ghost::frightenedActive = false;
 const Movement* Ghost::playerMovement = nullptr;
+const int* Ghost::eatenPellets = nullptr;
+GhostState Ghost::globalState = GhostState::scatter;
+GhostState Ghost::prevState = GhostState::scatter;
+bool Ghost::isSetPrevState = false;
 
 
 
@@ -44,12 +50,18 @@ const Movement* Ghost::playerMovement = nullptr;
 Ghost::Ghost() {
     this->speed = 120.0f;
     this->movement = Movement::still;
-    this->state = GhostState::chase;
-    this->prevState = GhostState::scatter;
     this->lastCol = -1;
     this->lastRow = -1;
     this->eyeTextureRectangle = Rectangle{0, 0, 32, 11};
     this->reverse = false;
+    this->respowning = false;
+    this->gettingInCageForRespown = false;
+    this->gettingOutCageForRespown = false;
+    this->spowning = false;
+    this->minPelletsForSpown = 0;
+    this->isSetCagedFirstMovement = false;
+    this->forcedSpown = false;
+
 
 
     if(!staticTexturesLoaded) {
@@ -89,7 +101,7 @@ auto Ghost::setGhostTexture(const char* path) -> void {
 
 //draws the ghost
 auto Ghost::draw() -> void {
-    if(state == GhostState::frightened) {
+    if(state == GhostState::frightened || (state == GhostState::caged && Ghost::frightenedActive)) {
         DrawTextureRec(
             Ghost::frightenedTexture[Ghost::frightenedTextureBlinkingIndex],
             textureRectangle, 
@@ -97,8 +109,16 @@ auto Ghost::draw() -> void {
             WHITE
         );
     } else {
-        DrawTextureRec(ghostTexture, Ghost::textureRectangle, position, WHITE);
-        DrawTextureRec(Ghost::eyes, eyeTextureRectangle, Vector2{position.x, position.y + 6}, WHITE);
+        if(state != GhostState::eaten) {
+            DrawTextureRec(ghostTexture, Ghost::textureRectangle, position, WHITE);
+        }
+        
+        DrawTextureRec(
+            Ghost::eyes, 
+            eyeTextureRectangle, 
+            Vector2{position.x, position.y + 6}, 
+            WHITE
+        );
     }
 }
 
@@ -107,31 +127,64 @@ auto Ghost::draw() -> void {
 //updates the ghost
 auto Ghost::update(float dt) -> void {
     //switching to frightened state
-    if(Global::bigPelletEaten && state != GhostState::eaten) {
+    if(Global::bigPelletEaten && state != GhostState::eaten && state != GhostState::caged) {
         switchToFrightenedState();
     }
 
 
+    //switch back from frightened state
     if(state == GhostState::frightened && !Ghost::frightenedActive) {
         switchFromFrightenedState();
     }
 
 
+    //updates the target only in scatter and chase
     if(state == GhostState::scatter || state == GhostState::chase) {
         updateTarget();
     }
 
 
-    updateMovement(dt);
+    //updates to align the ghost with the respown position
+    if((state == GhostState::eaten && !respowning) || gettingOutCageForRespown) {
+        updateToSetRespowningPosition(dt);
+    }
 
 
+    //updates ghost texture rectangle
+    updateAnimationRectangle(dt);
+
+
+
+    //updates the position while the ghost is respowning
+    if(respowning) {
+        if(gettingInCageForRespown) {
+            updatePositionWhileRespowning(eatenTarget.y - (float)Ghost::height / 2, dt);
+        } else if(gettingOutCageForRespown) {
+            updatePositionWhileRespowning(237.0f, dt);
+        }
+
+        return;
+    }
+
+
+    //updates the eye texture rectangle
     updateEyeTextureRectangle();
 
 
+    //updates the position while in caged
+    if(state == GhostState::caged) {
+        updateSpowning();
+        updateCagedPosition(dt);
+        return;
+    }
+
+
+    //updates the ghost movement
+    updateMovement(dt);
+
+
+    //updates the position while it's in scatter and chase
     updatePosition(dt);
-
-
-    updateAnimationRectangle(dt);
 }
 
 
@@ -189,11 +242,43 @@ auto Ghost::updatePosition(float dt) -> void {
     }
 
 
-    //pacman effect
+    
+    //handles pacman-effect
+    pacmanEffect();
+}
+
+
+
+//handles pacman-effect
+auto Ghost::pacmanEffect() -> void {
     if(position.x <= -64 && movement == Movement::left) 
         position.x = mapDimension.x + 30;
     else if(position.x >= mapDimension.x + 30 && movement == Movement::right)
         position.x = -64;
+}
+
+
+
+//updates the position while respowning
+auto Ghost::updatePositionWhileRespowning(float yTarget, float dt) -> void {
+    const float window = 100.0f * dt;
+    const float direction = Global::sign(yTarget - position.y);
+
+    if(std::fabs(position.y - yTarget) <= window && direction > 0) {
+        position.y = yTarget;
+        gettingInCageForRespown = false;
+        gettingOutCageForRespown = true;
+        state = Ghost::prevState;
+        return;
+    } else if(std::fabs(position.y - yTarget) <= window && direction < 0) {
+        position.y = yTarget;
+        gettingOutCageForRespown = false;
+        respowning = false;
+        speed = 120.0f;
+        return;
+    }
+
+    position.y += window * direction;
 }
 
 
@@ -502,13 +587,14 @@ auto Ghost::isOutOfBounds() -> bool {
 //sets up the frightened state
 auto Ghost::switchToFrightenedState() -> void {
     //eaten already excluded
-    if(state != GhostState::frightened)
+    if(state != GhostState::frightened && state != GhostState::caged)
         reverse = true;
 
         
     //sets the previous state
-    if(state == GhostState::scatter || state == GhostState::chase || state == GhostState::caged) {
-        prevState = state;
+    if(!Ghost::isSetPrevState) {
+        Ghost::prevState = Ghost::globalState;
+        Ghost::isSetPrevState = true;
     }
 
     speed = 60.0f;
@@ -517,6 +603,7 @@ auto Ghost::switchToFrightenedState() -> void {
     Ghost::frightenedTextureBlinkingIndex = 0;
     Ghost::startFrightenedTextureBlinking = false;
     Ghost::frightenedActive = true;
+    Ghost::globalState = GhostState::frightened;
     state = GhostState::frightened;
 }
 
@@ -524,7 +611,9 @@ auto Ghost::switchToFrightenedState() -> void {
 
 //goes back from the frightened state to the previous state
 auto Ghost::switchFromFrightenedState() -> void {
-    state = prevState;
+    Ghost::globalState = Ghost::prevState;
+    Ghost::isSetPrevState = false;
+    state = Ghost::globalState;
     reverse = true;
     speed = 120.0f;
 }
@@ -585,4 +674,136 @@ auto Ghost::setPlayerMovement(const Movement* playerMovement) -> void {
 //calculates the distance from the coordinates passed to the current target
 auto Ghost::distanceFromTarget(float x, float y) -> float {
     return std::hypotf(x - target.x, y - target.y);
+}
+
+
+
+//returns the current ghost state
+auto Ghost::getState() const -> GhostState {
+    return this->state;
+}
+
+
+
+//sets the state to eaten
+auto Ghost::setStateToEaten() const -> void {
+    state = GhostState::eaten;
+    speed = 240.0f;
+    target = Ghost::eatenTarget;
+}
+
+
+
+//returns the ghost position
+auto Ghost::getPosition() const noexcept -> Vector2 {
+    return this->position;
+}
+
+
+
+//checks if the ghost is aligned whit the respowning position and sets the x position
+//to be aligned 
+auto Ghost::updateToSetRespowningPosition(float dt) -> void {
+    const float window = speed * dt;
+
+    float ghostXCenter = position.x + (float)Ghost::width / 2;
+    bool alignedWithCage = std::fabs(ghostXCenter - 14 * 22) <= window && position.y == 237;
+
+    if(!alignedWithCage) return;
+
+    position.x = 14 * 22 - (float)Ghost::width / 2;
+    respowning = true;
+    gettingInCageForRespown = true;
+}
+
+
+
+//sets the pointer to the number of eaten pellets by the player
+auto Ghost::setEatenPellets(const int* eatenPellets) -> void {
+    Ghost::eatenPellets = eatenPellets;
+}
+
+
+
+//checks if the ghost is spowning
+auto Ghost::updateSpowning() -> void {
+    spowning = *eatenPellets >= minPelletsForSpown || forcedSpown;
+}
+
+
+
+//updates the position while the ghost is caged and respowning
+auto Ghost::updateCagedPosition(float dt) -> void {
+    if(spowning) {
+        updateCagedPositionSpowning(dt);
+    } else {
+        updateCagedPositionNotSpowning(dt);
+    }
+}
+
+
+
+//updates the position to make the gost spown and get out of the cage
+auto Ghost::updateCagedPositionSpowning(float dt) -> void {
+    const float window = speed * dt;
+    const float ghostCenterX = position.x + (float)Ghost::width / 2;
+    const float ghostCenterY = position.y + (float)Ghost::height / 2;
+
+    const bool xAligned = std::fabs(14 * 22 - ghostCenterX) <= window;
+    const bool yAligned = std::fabs(11.5f * 22 - ghostCenterY) <= window;
+
+    if(xAligned) {
+        position.x = 14 * 22 - (float)Ghost::width / 2;
+    } else {
+        const float direction = Global::sign(14 * 22 - ghostCenterX);
+        position.x += window * direction;
+        movement = direction > 0 ? Movement::right : Movement::left;
+    }
+
+    if(xAligned && !yAligned) {
+        position.y -= window;
+        movement = Movement::up;
+    } else if(xAligned && yAligned) {
+        position.y = 237;
+        spowning = false;
+        
+        if(Ghost::globalState == GhostState::frightened) speed = 60.0f;
+
+        state = Ghost::globalState;
+        movement = Movement::still;
+    }
+}
+
+
+
+//updates the position while the ghost is still caged and not spowning (up and down)
+auto Ghost::updateCagedPositionNotSpowning(float dt) -> void {
+    float direction = 0.0f;
+
+    if(!isSetCagedFirstMovement) {
+        movement = GetRandomValue(0, 1) == 1 ? Movement::up : Movement::down;
+        isSetCagedFirstMovement = true;
+    }
+
+    if(movement == Movement::down) direction = 1.0f;
+    else if(movement == Movement::up) direction = -1.0f;
+
+    if(direction > 0 && position.y + (float)Ghost::height >= 14.5f * 22 + (float)Ghost::height / 2 + 10) movement = Movement::up;
+    else if(direction < 0 && position.y <= 14.5f * 22 - (float)Ghost::height / 2 - 10) movement = Movement::down;
+
+    position.y += 60.0f * dt * direction;
+}
+
+
+
+//returns if the ghost is spowned
+auto Ghost::spowned() -> bool {
+    return state != GhostState::caged && !spowning;
+}
+
+
+
+//forces the ghost spown
+auto Ghost::forceSpown() -> void {
+    this->forcedSpown = true;
 }

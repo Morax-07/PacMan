@@ -7,6 +7,10 @@
 
 
 
+
+
+
+
 //PLAYER CLASS METHODS
 //player's constructor
 //sets initial attributes value and load data
@@ -26,6 +30,10 @@ Player::Player(): width(34), height(32) {
     this->stoppedForCollision = false;
     this->positionBounds[0] = 0;
     this->currentDirection = Movement::still;
+    this->eatenPellets = 0;
+    this->notEatingInterval = 4.0f;
+    this->notEatingTimer = 0.0f;
+    this->notEating = false;
 }
 
 
@@ -112,6 +120,10 @@ auto Player::update(float dt) -> void {
     if(movement != Movement::still) currentDirection = movement;
 
 
+    //updates not eating timer
+    updateNotEating(dt);
+
+
     //stops updating position and animation if the player collides with an obstacle
     if(stoppedForCollision) return;
 
@@ -194,6 +206,8 @@ auto Player::checkPelletsCollision() -> void {
     std::erase_if(*pellets, [&](const Pellet& pellet) -> bool {
         if(CheckCollisionRecs(pellet.hitbox(), mouthHitbox())) {
             points += pellet.getPoints();
+            eatenPellets++;
+            resetNotEating();
             Global::bigPelletEaten = pellet.isBig();
             return true;
         }
@@ -403,4 +417,71 @@ auto Player::getPosition() const noexcept -> const Vector2* {
 //returns a pointer to the player movement
 auto Player::getMovement() const noexcept -> const Movement* {
     return &this->currentDirection;
+}
+
+
+
+//checks the collisions with ghosts
+auto Player::checkGhostCollision(const Ghost* ghost) -> void {
+    if(CheckCollisionRecs(bodyHitbox(), ghost->bodyHitbox())) {
+        switch(ghost->getState()) {
+            case GhostState::frightened:
+                ghost->setStateToEaten();
+
+
+                Global::ghostPoints = 200 * (1 << Global::ghostEaten);
+                Global::ghostPointsDrawingPosition = {
+                    .x = ghost->getPosition().x + (float)Ghost::width / 2,
+                    .y = ghost->getPosition().y
+                };
+
+
+                points += Global::ghostPoints;
+                Global::ghostEaten++;
+                Global::stopForEatenGhost = true;
+                break;
+
+            case GhostState::scatter:
+            case GhostState::chase:
+                break;
+
+            default:
+                break;
+        }
+    }
+}
+
+
+
+//gets a pointer to the number of pellets eaten
+auto Player::getEatenPellets() const noexcept -> const int* {
+    return &this->eatenPellets;
+}
+
+
+
+//updates not eating
+auto Player::updateNotEating(float dt) -> void {
+    if(notEating) return;
+
+    notEatingTimer += dt;
+    if(notEatingTimer >= notEatingInterval) {
+        notEatingTimer = 0.0f;
+        notEating = true;
+    }
+}
+
+
+
+//returns if the player is not eating
+auto Player::isNotEating() const noexcept -> bool {
+    return this->notEating;
+}
+
+
+
+//resets not eating status
+auto Player::resetNotEating() -> void {
+    notEatingTimer = 0.0f;
+    notEating = false;
 }

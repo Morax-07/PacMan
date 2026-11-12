@@ -20,10 +20,16 @@ enum class GhostState {caged, scatter, chase, frightened, eaten};
 
 
 namespace Global {
+    extern auto sign(float) -> float;
+
     extern const Color pacBlue;
     extern bool inputAvailable;
     extern bool bigPelletEaten;
     extern const bool visualTargetDebug;
+    extern bool stopForEatenGhost;
+    extern short ghostEaten;
+    extern int ghostPoints;
+    extern Vector2 ghostPointsDrawingPosition;
 }
 
 

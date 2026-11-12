@@ -1,8 +1,8 @@
 #pragma once
 #include "block.h"
 #include "global.h"
-#include "player.h"
 #include <raylib.h>
+#include <vector>
 
 
 
@@ -30,13 +30,22 @@ class Ghost {
         static short frightenedTextureBlinkingIndex;
         static bool frightenedActive;
         static const std::vector<Block>* blocks;
+        static const int* eatenPellets;
+        static GhostState globalState;
+        static GhostState prevState;
+        static bool isSetPrevState;
+        mutable float speed;
         Rectangle eyeTextureRectangle;
-        float speed;
         float lastCol;
         float lastRow;
         Texture2D ghostTexture;
-        GhostState prevState;
         bool reverse;
+        bool respowning;
+        bool gettingInCageForRespown;
+        bool gettingOutCageForRespown;
+        bool spowning;
+        bool isSetCagedFirstMovement;
+        bool forcedSpown;
 
 
         static auto updateAnimationRectangle(float) -> void;
@@ -53,6 +62,13 @@ class Ghost {
         auto updateEyeTextureRectangle(void) -> void;
         auto updateTarget(void) -> void;
         auto distanceFromTarget(float, float) -> float;
+        auto pacmanEffect(void) -> void;
+        auto updateToSetRespowningPosition(float) -> void;
+        auto updatePositionWhileRespowning(float, float) -> void;
+        auto updateSpowning(void) -> void;
+        auto updateCagedPosition(float) -> void;
+        auto updateCagedPositionSpowning(float) -> void;
+        auto updateCagedPositionNotSpowning(float) -> void;
 
 
 
@@ -62,11 +78,12 @@ class Ghost {
         static const Vector2* playerPosition;
         static const Movement* playerMovement;
         static Vector2 mapDimension;
+        mutable GhostState state;
+        mutable Vector2 target;
         Vector2 position;
-        Vector2 target;
         Vector2 scatterTarget;
-        GhostState state;
         Movement movement;
+        int minPelletsForSpown;
         
         
         virtual auto updateChaseTarget(void) -> void = 0;
@@ -84,13 +101,20 @@ class Ghost {
         static auto setPlayerPosition(const Vector2*) -> void;
         static auto setPlayerMovement(const Movement*) -> void;
         static auto updateFrightenedMode(float) -> void;
-        virtual auto drawTarget(void) -> void = 0;
+        static auto setEatenPellets(const int*) -> void;
         auto update(float) -> void;
         auto draw(void) -> void;
         auto bodyHitbox(void) const -> Rectangle;
         auto setGhostTexture(const char*) -> void;
+        auto getState(void) const -> GhostState;
+        auto setStateToEaten(void) const -> void;
+        auto getPosition(void) const noexcept -> Vector2;
+        auto spowned(void) -> bool;
+        auto forceSpown(void) -> void;
+
 
         virtual auto setScatterTarget(void) -> void = 0;
+        virtual auto drawTarget(void) -> void = 0;
 
 
 

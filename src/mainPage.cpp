@@ -1,3 +1,4 @@
+#include <memory>
 #include <raylib.h>
 #include "../include/mainPage.h"
 
@@ -21,25 +22,45 @@ MainPage::MainPage(): Page() {
     Ghost::setPlayerMovement(pacman.getMovement());
     Ghost::setBlocks(map.getBlocks());
     Ghost::setMapDimension(Vector2{(float)map.width, (float)map.height});
+    Ghost::setEatenPellets(pacman.getEatenPellets());
 
-    pg.setScatterTarget();
-    rg.setScatterTarget();
-    bg.setScatterTarget();
-    og.setScatterTarget();
 
-    pg.setGhostTexture("../bin/data/texture/pinkGhost.png");
-    rg.setGhostTexture("../bin/data/texture/redGhost.png");
-    bg.setGhostTexture("../bin/data/texture/blueGhost.png");
-    og.setGhostTexture("../bin/data/texture/orangeGhost.png");
+    //creates unique pointer to all ghosts types
+    auto red    = std::make_unique<RedGhost>();
+    auto pink   = std::make_unique<PinkGhost>();
+    auto blue   = std::make_unique<BlueGhost>();
+    auto orange = std::make_unique<OrangeGhost>();
 
-    bg.setRedGhostPosition(rg.getPosition());
+    //sets the ghosts textures
+    red->setGhostTexture("../bin/data/texture/redGhost.png");
+    pink->setGhostTexture("../bin/data/texture/pinkGhost.png");
+    blue->setGhostTexture("../bin/data/texture/blueGhost.png");
+    orange->setGhostTexture("../bin/data/texture/orangeGhost.png");
 
-    
+    //sets the red position pointer in the blue ghost
+    blue->setRedGhostPosition(red->getPosition());
+
+
+    //moves the ghosts in the array
+    this->ghosts = {
+        std::move(red),
+        std::move(pink),
+        std::move(blue),
+        std::move(orange),
+    };
+
+    //sets the ghosts scatter targets
+    for(auto& ghost : ghosts) {
+        ghost->setScatterTarget();
+    }
+
 
 
     this->coverRec = {(float)map.width, 0, (float)GetScreenWidth() - map.width, (float)GetScreenHeight()};
     this->paused = false;
     this->level = 1;
+    this->stopForEatenGhostInterval = 0.5f;
+    this->stopForEatenGhostTimer = 0.0f;
 }
 
 
@@ -56,16 +77,40 @@ MainPage::~MainPage() {
 auto MainPage::draw() -> void {
     map.draw();
     pacman.draw();
-    rg.draw();
-    pg.draw();
-    bg.draw();
-    og.draw();
+    
 
+    for(auto& ghost : ghosts) {
+        ghost->draw();
+    }
+
+
+    if(Global::stopForEatenGhost) {
+        const Vector2 textDimension = MeasureTextEx(
+            font, 
+            TextFormat("%i", Global::ghostPoints), 
+            15, 
+            1
+        );
+        const Vector2 pointPosition = {
+            .x = Global::ghostPointsDrawingPosition.x - textDimension.x / 2,
+            .y = Global::ghostPointsDrawingPosition.y
+        };
+
+        drawOutlineText(
+            TextFormat("%i", Global::ghostPoints), 
+            pointPosition, 
+            15, 
+            1,
+            RAYWHITE
+        );
+    }
+
+
+    //draws all ghosts targets for visual debug
     if(Global::visualTargetDebug) {
-        rg.drawTarget();
-        pg.drawTarget();
-        bg.drawTarget();
-        og.drawTarget();
+        for(auto& ghost : ghosts) {
+            ghost->drawTarget();
+        }
     }
     
 
@@ -147,19 +192,44 @@ auto MainPage::draw() -> void {
 auto MainPage::update(float dt) -> void {
     if(paused) return;
 
+
+    //if the ghost is eaten stop the game for a while
+    if(Global::stopForEatenGhost) {
+        stopForEatenGhostTimer += dt;
+
+        if(stopForEatenGhostTimer >= stopForEatenGhostInterval) {
+            stopForEatenGhostTimer = 0.0f;
+            Global::stopForEatenGhost = false;
+        }
+
+        return;
+    }
+
+
     map.update(dt);
     pacman.update(dt);
 
     Ghost::updateFrightenedMode(dt);
-    rg.update(dt);
-    pg.update(dt);
-    bg.update(dt);
-    og.update(dt);
+    
+    for(auto& ghost : ghosts) {
+        if(pacman.isNotEating() && !ghost->spowned()) {
+            ghost->forceSpown();
+            pacman.resetNotEating();
+        }
+
+        ghost->update(dt);
+    }
+
+
+    //if a big pellet is eaten and the number of ghost eaten is different from 0, it is set to 0
+    //gets the ghost eating points back to 200 every time a big pellet is eaten
+    if(Global::bigPelletEaten && Global::ghostEaten != 0) Global::ghostEaten = 0;
 
     Global::bigPelletEaten = false;
 
-    pacman.checkPelletsCollision();
-    pacman.checkBodyBlocksCollision();
+
+
+    collisions();
 }
 
 
@@ -171,4 +241,35 @@ auto MainPage::input() -> void{
     if(paused) return;
 
     pacman.input();
+}
+
+
+
+auto MainPage::collisions() -> void {
+    pacman.checkPelletsCollision();
+    pacman.checkBodyBlocksCollision();
+
+
+    for(auto& ghost : ghosts) {
+        pacman.checkGhostCollision(ghost.get());
+    }
+}
+
+
+
+//draws a text with an outline
+auto MainPage::drawOutlineText(const char* text, const Vector2& position, float size, float spacing, Color color, Color outline) -> void {
+    for(int dx = -1; dx <= 1; dx++) {
+        for(int dy = -1; dy <= 1; dy++) {
+            DrawTextEx(
+                font, 
+                text, 
+                Vector2{position.x + dx, position.y + dy}, 
+                size, 
+                spacing, 
+                outline
+            );
+        }
+    }
+    DrawTextEx(font, text, position, size, spacing, color);   
 }

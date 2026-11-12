@@ -7,16 +7,33 @@
 
 
 
+
+
+
+
+
+//orangeGhost constructor
 OrangeGhost::OrangeGhost(): Ghost() {
-    this->position = Vector2{14 * 22 - (float)Ghost::width / 2, 11.5f * 22 - (float)Ghost::height / 2};
+    this->position = Vector2{14 * 22 + (float)Ghost::width / 1.25f, 14.5f * 22 - (float)Ghost::height / 2};
+    this->minPelletsForSpown = 60;
+    this->state = GhostState::caged;
 }
 
+
+
+//orange ghost destructor
 OrangeGhost::~OrangeGhost() {}
 
+
+
+//sets orange ghost scatter target
 auto OrangeGhost::setScatterTarget() -> void {
     this->scatterTarget = Vector2{55, mapDimension.y + 77};
 }
 
+
+
+//updates orange ghost chase target
 auto OrangeGhost::updateChaseTarget() -> void {
     const float distanceFromPlayer = std::hypotf(
         (playerPosition->x + 17) - (position.x + (float)Ghost::width / 2),
@@ -32,6 +49,9 @@ auto OrangeGhost::updateChaseTarget() -> void {
     target = Vector2{playerPosition->x + 17, playerPosition->y + 16};
 }
 
+
+
+//draw method to draw orange ghost target
 auto OrangeGhost::drawTarget() -> void {
     if(Vector2Equals(target, scatterTarget)) {
         DrawCircleV({11, mapDimension.y - 11}, 10, ORANGE);
